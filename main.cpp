@@ -148,10 +148,11 @@ class DirichletBoundary : public SubDomain
 
 int main(int argc, char** argv)
 {
-  auto lib_osh = Omega_h::Library(&argc, &argv);
-
   // Create mesh and function space
   std::shared_ptr<Mesh> mesh;
+
+  auto lib_osh = Omega_h::Library(&argc, &argv);
+
   mesh = std::make_shared<UnitSquareMesh>(32, 32);
   auto V = std::make_shared<Poisson::FunctionSpace>(mesh);
 
