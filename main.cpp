@@ -4,6 +4,7 @@
 #include <Omega_h_file.hpp>
 #include <Omega_h_class.hpp>
 #include <Omega_h_adapt.hpp>
+#include <Omega_h_build.hpp>
 #include "Poisson.h"
 
 class Source : public dolfin::Expression
@@ -35,11 +36,25 @@ class DirichletBoundary : public dolfin::SubDomain
 int main(int argc, char** argv)
 {
   auto lib_osh = Omega_h::Library(&argc, &argv);
+  auto comm_osh = lib_osh.world();
 
-  std::shared_ptr<dolfin::Mesh> mesh;
+  auto mesh_osh = Omega_h::build_box(comm_osh,
+      1.0, 1.0, 0.0, 32, 32, 0);
 
-  mesh = std::make_shared<dolfin::UnitSquareMesh>(32, 32);
-  auto V = std::make_shared<Poisson::FunctionSpace>(mesh);
+#ifdef OMEGA_H_USE_MPI
+  auto mesh_dolfin = std::make_shared<dolfin::Mesh>(comm_osh->get_impl());
+#else
+  auto mesh_dolfin = std::make_shared<dolfin::Mesh>();
+#endif
+  Omega_h::to_dolfin(*mesh_dolfin, &mesh_osh);
+
+  dolfin::File file_dolfin("dolfin.pvd");
+  Omega_h::vtk::Writer file_osh("omega_h", &mesh_osh);
+
+  file_dolfin << *mesh_dolfin;
+  file_osh.write();
+
+  auto V = std::make_shared<Poisson::FunctionSpace>(mesh_dolfin);
 
   auto u0 = std::make_shared<dolfin::Constant>(0.0);
   auto boundary = std::make_shared<DirichletBoundary>();
@@ -55,29 +70,27 @@ int main(int argc, char** argv)
   dolfin::Function u(V);
   solve(a == L, u, bc);
 
-  dolfin::File file("poisson.pvd");
-  file << u;
-
-  Omega_h::Mesh mesh_osh(&lib_osh);
-  Omega_h::from_dolfin(&mesh_osh, *mesh);
   Omega_h::from_dolfin(&mesh_osh, u, "u");
-  Omega_h::classify_by_angles(&mesh_osh, Omega_h::PI / 4.0);
-  Omega_h::MetricInput metric_input;
-  auto source = Omega_h::MetricSource(OMEGA_H_VARIATION, 1e-3, "u");
-  metric_input.sources.push_back(source);
-  metric_input.should_limit_lengths = true;
-  metric_input.min_length = 1.0 / 32.0;
-  metric_input.max_length = 1.0 / 2.0;
-  metric_input.should_limit_gradation = true;
-  Omega_h::generate_target_metric_tag(&mesh_osh, metric_input);
-  Omega_h::add_implied_metric_tag(&mesh_osh);
-  Omega_h::vtk::write_vtu("before.vtu", &mesh_osh);
-  Omega_h::AdaptOpts opts(&mesh_osh);
-  opts.xfer_opts.type_map["u"] = OMEGA_H_LINEAR_INTERP;
-  while (Omega_h::approach_metric(&mesh_osh, opts)) {
-    Omega_h::adapt(&mesh_osh, opts);
-  }
-  Omega_h::vtk::write_vtu("after.vtu", &mesh_osh);
+
+  file_dolfin << u;
+  file_osh.write();
+
+//Omega_h::MetricInput metric_input;
+//auto source = Omega_h::MetricSource(OMEGA_H_VARIATION, 1e-3, "u");
+//metric_input.sources.push_back(source);
+//metric_input.should_limit_lengths = true;
+//metric_input.min_length = 1.0 / 32.0;
+//metric_input.max_length = 1.0 / 2.0;
+//metric_input.should_limit_gradation = true;
+//Omega_h::generate_target_metric_tag(&mesh_osh, metric_input);
+//Omega_h::add_implied_metric_tag(&mesh_osh);
+//Omega_h::vtk::write_vtu("before.vtu", &mesh_osh);
+//Omega_h::AdaptOpts opts(&mesh_osh);
+//opts.xfer_opts.type_map["u"] = OMEGA_H_LINEAR_INTERP;
+//while (Omega_h::approach_metric(&mesh_osh, opts)) {
+//  Omega_h::adapt(&mesh_osh, opts);
+//}
+//Omega_h::vtk::write_vtu("after.vtu", &mesh_osh);
 
   // Plot solution
 //plot(u);
