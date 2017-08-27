@@ -6,11 +6,9 @@
 #include <Omega_h_adapt.hpp>
 #include "Poisson.h"
 
-using namespace dolfin;
-
-class Source : public Expression
+class Source : public dolfin::Expression
 {
-  void eval(Array<double>& values, const Array<double>& x) const
+  void eval(dolfin::Array<double>& values, const dolfin::Array<double>& x) const
   {
     double dx = x[0] - 0.5;
     double dy = x[1] - 0.5;
@@ -18,17 +16,17 @@ class Source : public Expression
   }
 };
 
-class dUdN : public Expression
+class dUdN : public dolfin::Expression
 {
-  void eval(Array<double>& values, const Array<double>& x) const
+  void eval(dolfin::Array<double>& values, const dolfin::Array<double>& x) const
   {
     values[0] = sin(5*x[0]);
   }
 };
 
-class DirichletBoundary : public SubDomain
+class DirichletBoundary : public dolfin::SubDomain
 {
-  bool inside(const Array<double>& x, bool on_boundary) const
+  bool inside(const dolfin::Array<double>& x, bool on_boundary) const
   {
     return x[0] < DOLFIN_EPS or x[0] > 1.0 - DOLFIN_EPS;
   }
@@ -38,14 +36,14 @@ int main(int argc, char** argv)
 {
   auto lib_osh = Omega_h::Library(&argc, &argv);
 
-  std::shared_ptr<Mesh> mesh;
+  std::shared_ptr<dolfin::Mesh> mesh;
 
-  mesh = std::make_shared<UnitSquareMesh>(32, 32);
+  mesh = std::make_shared<dolfin::UnitSquareMesh>(32, 32);
   auto V = std::make_shared<Poisson::FunctionSpace>(mesh);
 
-  auto u0 = std::make_shared<Constant>(0.0);
+  auto u0 = std::make_shared<dolfin::Constant>(0.0);
   auto boundary = std::make_shared<DirichletBoundary>();
-  DirichletBC bc(V, u0, boundary);
+  dolfin::DirichletBC bc(V, u0, boundary);
 
   Poisson::BilinearForm a(V, V);
   Poisson::LinearForm L(V);
@@ -54,10 +52,10 @@ int main(int argc, char** argv)
   L.f = f;
   L.g = g;
 
-  Function u(V);
+  dolfin::Function u(V);
   solve(a == L, u, bc);
 
-  File file("poisson.pvd");
+  dolfin::File file("poisson.pvd");
   file << u;
 
   Omega_h::Mesh mesh_osh(&lib_osh);
