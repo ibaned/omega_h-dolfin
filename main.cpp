@@ -35,12 +35,17 @@ class DirichletBoundary : public dolfin::SubDomain
 
 int main(int argc, char** argv)
 {
+  MPI_Init(&argc, &argv);
   auto lib_osh = Omega_h::Library(&argc, &argv);
   auto comm_osh = lib_osh.world();
 
   auto mesh_osh = Omega_h::build_box(comm_osh,
+      OMEGA_H_SIMPLEX,
       1.0, 1.0, 0.0, 32, 32, 0);
+  mesh_osh.balance();
+  mesh_osh.set_parting(OMEGA_H_GHOSTED);
   Omega_h::add_implied_metric_tag(&mesh_osh);
+  mesh_osh.set_parting(OMEGA_H_ELEM_BASED);
 
 #ifdef OMEGA_H_USE_MPI
   auto mesh_dolfin = std::make_shared<dolfin::Mesh>(comm_osh->get_impl());
@@ -49,7 +54,7 @@ int main(int argc, char** argv)
 #endif
 
   dolfin::File file_dolfin("dolfin.pvd");
-  Omega_h::vtk::Writer file_osh("omega_h", &mesh_osh);
+  Omega_h::vtk::Writer file_osh("omega_h-vtk-output", &mesh_osh);
 
   int i = 0;
   int n = 3;
@@ -80,6 +85,7 @@ int main(int argc, char** argv)
 
     if (++i == n) break;
 
+    mesh_osh.set_parting(OMEGA_H_GHOSTED);
     Omega_h::MetricInput metric_input;
     auto source = Omega_h::MetricSource(OMEGA_H_VARIATION, 2e-3, "u");
     metric_input.sources.push_back(source);
