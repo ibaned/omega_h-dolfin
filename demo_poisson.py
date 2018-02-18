@@ -1,5 +1,5 @@
 from dolfin import *
-import omega_h as omega_h
+import PyOmega_h as omega_h
 
 mesh = UnitSquareMesh(32, 32)
 V = FunctionSpace(mesh, "Lagrange", 1)
@@ -11,7 +11,9 @@ u0 = Constant(0.0)
 f = Expression("10*exp(-(pow(x[0] - 0.5, 2) + pow(x[1] - 0.5, 2)) / 0.02)", degree=2)
 g = Expression("sin(5*x[0])", degree=2)
 
-mesh_osh = omega_h.from_dolfin(mesh)
+mesh_osh = omega_h.new_empty_mesh()
+mesh2 = *mesh
+omega_h.mesh_from_dolfin_unit_square(mesh_osh, mesh2)
 mesh_osh.set_parting(OMEGA_H_GHOSTED)
 omega_h.add_implied_metric_tag(mesh_osh);
 mesh_osh.set_parting(OMEGA_H_ELEM_BASED);
@@ -19,7 +21,7 @@ mesh_osh.set_parting(OMEGA_H_ELEM_BASED);
 i = 0
 n = 3
 while (true):
-    mesh = omega_h.to_dolfin(mesh_osh);
+    omega_h.mesh_to_dolfin(mesh, mesh_osh);
     V = FunctionSpace(mesh, "Lagrange", 1)
 
     bc = DirichletBC(V, u0, boundary)
@@ -32,12 +34,13 @@ while (true):
     u = Function(V)
     solve(a == L, u, bc)
 
-    omega_h.from_dolfin(mesh_osh, u, "u")
+    omega_h.function_from_dolfin(mesh_osh, u, "u")
 
     file = File("poisson.pvd")
     file << u
 
-    if (++i == n) break;
+    if (++i == n):
+      break
 
     mesh_osh.set_parting(OMEGA_H_GHOSTED)
 
@@ -45,14 +48,14 @@ while (true):
 
     metric_input = omega_h.MetricInput()
     metric_input.sources.append(source)
-    metric_input.should_limit_lengths = true
+    metric_input.should_limit_lengths = True
     metric_input.max_length = 1.0 / 2.0
     metric_input.should_limit_gradation = True
 
     omega_h.generate_target_metric_tag(mesh_osh, metric_input)
 
     opts = omega_h.AdaptOpts(mesh_osh)
-    opts.verbosity = Omega_h::EXTRA_STATS
+    opts.verbosity = omega_h.EXTRA_STATS
 
     while (omega_h.approach_metric(mesh_osh, opts)):
       omega_h.adapt(mesh_osh, opts)
