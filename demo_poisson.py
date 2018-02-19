@@ -38,7 +38,6 @@ def create_weakforms(V):
 
     return a, L
 
-
 def create_metric_input():
     source = omega_h.MetricSource(omega_h.VARIATION, 2e-3, "u")
     metric_input = omega_h.MetricInput()
