@@ -10,3 +10,5 @@ cmake $HOME/shared/omega_h \
 -DOmega_h_USE_pybind11:BOOL=ON \
 -Dpybind11_PREFIX:PATH=$HOME/shared/pybind11/install \
 2>&1 | tee config_log
+
+

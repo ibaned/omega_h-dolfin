@@ -12,15 +12,15 @@ f = Expression("10*exp(-(pow(x[0] - 0.5, 2) + pow(x[1] - 0.5, 2)) / 0.02)", degr
 g = Expression("sin(5*x[0])", degree=2)
 
 mesh_osh = omega_h.new_empty_mesh()
-mesh2 = *mesh
-omega_h.mesh_from_dolfin_unit_square(mesh_osh, mesh2)
-mesh_osh.set_parting(OMEGA_H_GHOSTED)
+omega_h.mesh_from_dolfin_unit_square(mesh_osh, mesh)
+
+#mesh_osh.set_parting(OMEGA_H_GHOSTED)
 omega_h.add_implied_metric_tag(mesh_osh);
-mesh_osh.set_parting(OMEGA_H_ELEM_BASED);
+#mesh_osh.set_parting(OMEGA_H_ELEM_BASED);
 
 i = 0
 n = 3
-while (true):
+while (True):
     omega_h.mesh_to_dolfin(mesh, mesh_osh);
     V = FunctionSpace(mesh, "Lagrange", 1)
 
@@ -34,13 +34,13 @@ while (true):
     u = Function(V)
     solve(a == L, u, bc)
 
-    omega_h.function_from_dolfin(mesh_osh, u, "u")
-
     file = File("poisson.pvd")
     file << u
 
-    if (++i == n):
-      break
+    print(type(u))
+    omega_h.function_from_dolfin(mesh_osh, u, "u")
+    
+    if (++i == n): break
 
     mesh_osh.set_parting(OMEGA_H_GHOSTED)
 
