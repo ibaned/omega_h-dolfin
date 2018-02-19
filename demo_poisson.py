@@ -12,15 +12,17 @@ f = Expression("10*exp(-(pow(x[0] - 0.5, 2) + pow(x[1] - 0.5, 2)) / 0.02)", degr
 g = Expression("sin(5*x[0])", degree=2)
 
 mesh_osh = omega_h.new_empty_mesh()
-mesh2 = *mesh
-omega_h.mesh_from_dolfin_unit_square(mesh_osh, mesh2)
-mesh_osh.set_parting(OMEGA_H_GHOSTED)
+omega_h.mesh_from_dolfin(mesh_osh, mesh)
+print('before first set_parting')
+mesh_osh.set_parting(omega_h.GHOSTED, 1)
 omega_h.add_implied_metric_tag(mesh_osh);
-mesh_osh.set_parting(OMEGA_H_ELEM_BASED);
+print('before second set_parting')
+mesh_osh.set_parting(omega_h.ELEM_BASED, 0);
 
 i = 0
 n = 3
-while (true):
+print('before adapt while loop')
+while (True):
     omega_h.mesh_to_dolfin(mesh, mesh_osh);
     V = FunctionSpace(mesh, "Lagrange", 1)
 
@@ -42,9 +44,9 @@ while (true):
     if (++i == n):
       break
 
-    mesh_osh.set_parting(OMEGA_H_GHOSTED)
+    mesh_osh.set_parting(omega_h.GHOSTED, 1)
 
-    source = omega_h.MetricSource(OMEGA_H_VARIATION, 2e-3, "u")
+    source = omega_h.MetricSource(omega_h.VARIATION, 2e-3, "u")
 
     metric_input = omega_h.MetricInput()
     metric_input.sources.append(source)
