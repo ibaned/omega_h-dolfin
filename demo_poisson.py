@@ -36,7 +36,7 @@ while (True):
     u = Function(V)
     solve(a == L, u, bc)
 
-    omega_h.function_from_dolfin(mesh_osh, u, "u")
+    omega_h.function_from_dolfin(mesh_osh, u._cpp_object, "u")
 
     file = File("poisson.pvd")
     file << u
@@ -49,7 +49,7 @@ while (True):
     source = omega_h.MetricSource(omega_h.VARIATION, 2e-3, "u")
 
     metric_input = omega_h.MetricInput()
-    metric_input.sources.append(source)
+    metric_input.add_source(source)
     metric_input.should_limit_lengths = True
     metric_input.max_length = 1.0 / 2.0
     metric_input.should_limit_gradation = True
